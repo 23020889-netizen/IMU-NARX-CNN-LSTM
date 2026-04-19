@@ -2,7 +2,7 @@
 Đầu vào: 
 - Tự hồi quy:
     + 3 giá trị roll, pitch, yaw
-    + 3 giá trị vận tốc góc p , q, r
+    + 3 giá trị vận tốc góc p , q, r (đạo hàm giá trị roll, pitch, raw)
     + 3 giá trị vận tốc thân V_body_x, V_body_y, V_body_z
     + Ngoại sinh: (Điều khiển): m1, m2, m3, m4: vận tốc 4 động cơ
 Đầu ra:
