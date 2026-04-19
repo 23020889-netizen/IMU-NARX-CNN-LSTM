@@ -1,4 +1,13 @@
 # IMU-NARX-CNN-LSTM
+Đầu vào: 
+- Tự hồi quy:
+    + 3 giá trị roll, pitch, yaw
+    + 3 giá trị vận tốc góc p , q, r
+    + 3 giá trị vận tốc thân V_body_x, V_body_y, V_body_z
+    + Ngoại sinh: (Điều khiển): m1, m2, m3, m4: vận tốc 4 động cơ
+Đầu ra:
+- Giá trị roll, pitch ,yaw
+
 Bước 1: Chuẩn bị và phân mảnh dữ liệu
     Sử dụng các công cụ:
     - Filtering: Moving Average Filter, Band-pass/Low-pass Filter: loại bỏ nhiễu tần số cao, làm nổi bật xu hướng chuyển động
