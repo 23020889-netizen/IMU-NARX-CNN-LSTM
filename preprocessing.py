@@ -3,7 +3,9 @@ import pandas as pd
 from scipy.signal import butter, filtfilt
 from sklearn.preprocessing import StandardScaler
 
-# Step 1: low pass filter
+# ==========================================
+# BƯỚC 1: HÀM LỌC NHIỄU (LOW-PASS FILTER)
+# ==========================================
 def butter_lowpass_filter(data, cutoff, fs, order=4):
     # fs: sampling frequency
     nyquist = 0.5 * fs
@@ -12,66 +14,88 @@ def butter_lowpass_filter(data, cutoff, fs, order=4):
     y = filtfilt(b, a, data, axis=0)
     return y
 
-# Step 2: load and preprocess data
-# suppose: data in CSV format, with columns: ... 
-# make simulation data to test the code
+# ==========================================
+# BƯỚC 2: LOAD VÀ TÍNH TOÁN ĐẶC TRƯNG VẬT LÝ
+# ==========================================
+# Giả lập dữ liệu (14 cột)
 columns_list = [
-    'roll', 'pitch', 'yaw', 
+    'time', 'roll', 'pitch', 'yaw', 
     'p', 'q', 'r', 
-    'Vbx', 'Vby', 'Vbz', 
+    'V_body_x', 'V_body_y', 'V_body_z', 
     'm1', 'm2', 'm3', 'm4'
 ]
 
+# Tạo dữ liệu ảo để test code (Thay đoạn này bằng pd.read_csv('AI_Training_Data.csv') khi chạy thật)
 np.random.seed(42)
-raw_data = np.random.rand(2000,13) # simulate raw data
+raw_data = np.random.rand(2000, 14) 
 df = pd.DataFrame(raw_data, columns=columns_list)
 
-FS = 100.0 # sampling frequency
-CUTOFF = 15.0 # filter the oscillations above 15 Hz 
+# --- TÍNH TOÁN MOMEN (TAU) THEO CÔNG THỨC CHỮ X ---
+# Lực đẩy tỷ lệ thuận với bình phương tốc độ quay
+m1_sq = df['m1']**2
+m2_sq = df['m2']**2
+m3_sq = df['m3']**2
+m4_sq = df['m4']**2
 
-# Chỉ lọc nhiễu các tín hiệu vận tốc góc và vận tốc thân, 
-# các góc yaw, pitch, roll và tín hiệu động cơ thường đã mượt
-noisy_cols = ['p', 'q', 'r', 'Vbx', 'Vby', 'Vbz']
-df[noisy_cols] = butter_lowpass_filter(df[noisy_cols].values, CUTOFF, FS)
+# Tính Momen giả định (Pseudo-Torques) cho Roll và Pitch
+df['tau_roll']  = m2_sq + m3_sq - m1_sq - m4_sq
+df['tau_pitch'] = m2_sq + m4_sq - m1_sq - m3_sq
 
-# Step 3: Z score normalization
+# ==========================================
+# BƯỚC 3: LỌC NHIỄU VÀ CHUẨN HÓA (Z-SCORE)
+# ==========================================
+# Kiến trúc mới: Input X chỉ có 2 Momen, Output Y chỉ có 2 Góc
+cols_X = ['tau_roll', 'tau_pitch']
+cols_Y = ['roll', 'pitch']
+
+# Lọc nhiễu Butterworth cho tín hiệu Momen (Vì lệnh động cơ m1..m4 đôi khi bị giật cục)
+FS = 100.0 
+CUTOFF = 15.0 
+df[cols_X] = butter_lowpass_filter(df[cols_X].values, CUTOFF, FS)
+
+# Chuẩn hóa để AI hội tụ nhanh
 scaler_X = StandardScaler()
 scaler_Y = StandardScaler()
 
-# Deep learning models require normalized data with average of 0 and standard deviation of 1
-# Input X bao gồm cả 13 cột)
-cols_X = columns_list
-# Output Y chỉ có 3 cột: yaw, pitch, roll
-cols_Y = ['roll', 'pitch', 'yaw']
 normalized_X = scaler_X.fit_transform(df[cols_X].values)
 normalized_Y = scaler_Y.fit_transform(df[cols_Y].values)
 
-# Step 4: Sliding window segmentation
-
+# ==========================================
+# BƯỚC 4: CẮT CỬA SỔ TRƯỢT (SLIDING WINDOW)
+# ==========================================
 def create_sliding_windows(X_data, Y_data, window_size):
     """
-    Cắt chuỗi thời gian bằng cửa sổ trượt.
-    Dùng dữ liệu từ t-n đến t (độ dài window_size) để dự đoán Y tại t+1.
+    Dùng chuỗi lực tác động từ t-n đến t (độ dài window_size) để dự đoán Góc tại t+1.
     """
-    X = []
-    Y = []
-
+    X, Y = [], []
     for i in range(len(X_data) - window_size):
-        # Đặc trưng X (Quá khứ): Từ thời điểm i đến i + window_size (Gồm cả 13 cột)
-        window_x = X_data[i: i + window_size, :]  # collect all columns for features
-        X.append(window_x)  # collect all columns for features
+        window_x = X_data[i : i + window_size, :]  # Quá khứ: Lấy 2 cột Tau
+        X.append(window_x) 
 
-        # Label Y (Target): time: t + 1 (only 3 colums: yaw, pitch, roll
-        target_y = Y_data[i + window_size, :] 
+        target_y = Y_data[i + window_size, :]      # Tương lai: Lấy 2 cột Góc roll , pitch
         Y.append(target_y)
 
     return np.array(X), np.array(Y)
 
-# Configure window
-WINDOW_SIZE = 50 # 0.5 seconds at 100 Hz
-X_train, Y_train = create_sliding_windows(normalized_X, normalized_Y, WINDOW_SIZE)
+WINDOW_SIZE = 50 # 0.5 giây ở tần số 100Hz
+X_full, Y_full = create_sliding_windows(normalized_X, normalized_Y, WINDOW_SIZE)
 
-# Test output shapes
-print(f"Kích thước X_train (Inputs): {X_train.shape} -> (Số mẫu, {WINDOW_SIZE} time-steps, 13 features)")
-print(f"Kích thước Y_train (Labels): {Y_train.shape} -> (Số mẫu, 3 features (yaw, pitch, roll))")
+# ==========================================
+# BƯỚC 5: CHIA TẬP TRAIN/VAL/TEST (CHRONOLOGICAL)
+# ==========================================
+# Tuyệt đối không xáo trộn (shuffle) dữ liệu chuỗi thời gian
+total_samples = len(X_full)
+train_end = int(total_samples * 0.70) # 70% Train
+val_end   = int(total_samples * 0.85) # 15% Val, 15% Test
 
+X_train, Y_train = X_full[:train_end], Y_full[:train_end]
+X_val, Y_val     = X_full[train_end:val_end], Y_full[train_end:val_end]
+X_test, Y_test   = X_full[val_end:], Y_full[val_end:]
+
+# ==========================================
+# IN KIỂM TRA KẾT QUẢ
+# ==========================================
+print("--- CẤU TRÚC DỮ LIỆU ĐÃ SẴN SÀNG CHO PYTORCH ---")
+print(f"Kích thước X_train: {X_train.shape} -> (Batch, {WINDOW_SIZE} timesteps, 2 features: tau_roll, tau_pitch)")
+print(f"Kích thước Y_train: {Y_train.shape} -> (Batch, 2 features: roll, pitch)")
+print(f"Phân bổ dữ liệu: Train = {len(X_train)} mẫu | Val = {len(X_val)} mẫu | Test = {len(X_test)} mẫu")
