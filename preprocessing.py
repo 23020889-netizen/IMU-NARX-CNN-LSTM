@@ -25,10 +25,11 @@ columns_list = [
     'm1', 'm2', 'm3', 'm4'
 ]
 
-# Tạo dữ liệu ảo để test code (Thay đoạn này bằng pd.read_csv('AI_Training_Data.csv') khi chạy thật)
-np.random.seed(42)
-raw_data = np.random.rand(2000, 14) 
-df = pd.DataFrame(raw_data, columns=columns_list)
+# 1. Dán đường dẫn bạn vừa copy ở Kaggle vào đây
+csv_file_path = '/kaggle/input/datasets/minhthinh678/data-training/AI_Training_Data.csv' 
+
+# 2. Đọc file thật
+df = pd.read_csv(csv_file_path)
 
 # --- TÍNH TOÁN MOMEN (TAU) THEO CÔNG THỨC CHỮ X ---
 # Lực đẩy tỷ lệ thuận với bình phương tốc độ quay
