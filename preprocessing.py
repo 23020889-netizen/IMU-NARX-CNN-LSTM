@@ -26,7 +26,7 @@ columns_list = [
 ]
 
 # 1. Dán đường dẫn bạn vừa copy ở Kaggle vào đây
-csv_file_path = '/kaggle/input/datasets/minhthinh678/data-training/AI_Training_Data.csv' 
+csv_file_path = 'AI_Training_Data.csv' 
 
 # 2. Đọc file thật
 df = pd.read_csv(csv_file_path)
