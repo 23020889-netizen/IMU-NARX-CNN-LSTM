@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class UAV_Torque_Net(nn.Module):
-    def __init__(self, seq_length=50):
+    def __init__(self, seq_length=20):
         super(UAV_Torque_Net, self).__init__()
         
         # ----------------------------------------------------
@@ -10,7 +10,7 @@ class UAV_Torque_Net(nn.Module):
         # ----------------------------------------------------
         self.cnn_block = nn.Sequential(
             # Layer 1: Giảm từ 32 xuống 16 channels
-            nn.Conv1d(in_channels=2, out_channels=16, kernel_size=3, padding=1),
+            nn.Conv1d(in_channels=4, out_channels=16, kernel_size=3, padding=1),
             nn.BatchNorm1d(16),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2), 
@@ -48,17 +48,11 @@ class UAV_Torque_Net(nn.Module):
     def forward(self, x):
         # Chuyển từ (Batch, Seq, Feat) -> (Batch, Feat, Seq) cho CNN
         x = x.permute(0, 2, 1)
-        
         x = self.cnn_block(x) 
-        
         # Chuyển lại cho LSTM: (Batch, Seq_new, Feat_new)
         x = x.permute(0, 2, 1)
-        
         lstm_out, (h_n, c_n) = self.lstm(x)
-        
         # Lấy trạng thái ở timestep cuối cùng
         last_time_step_out = lstm_out[:, -1, :] 
-        
         predictions = self.fc_block(last_time_step_out)
-        
         return predictions

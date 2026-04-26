@@ -46,13 +46,13 @@ df['tau_pitch'] = m2_sq + m4_sq - m1_sq - m3_sq
 # BƯỚC 3: LỌC NHIỄU VÀ CHUẨN HÓA (Z-SCORE)
 # ==========================================
 # Kiến trúc mới: Input X chỉ có 2 Momen, Output Y chỉ có 2 Góc
-cols_X = ['tau_roll', 'tau_pitch']
+cols_X = ['tau_roll', 'tau_pitch', 'roll', 'pitch'] 
 cols_Y = ['roll', 'pitch']
 
 # Lọc nhiễu Butterworth cho tín hiệu Momen (Vì lệnh động cơ m1..m4 đôi khi bị giật cục)
 FS = 100.0 
 CUTOFF = 15.0 
-df[cols_X] = butter_lowpass_filter(df[cols_X].values, CUTOFF, FS)
+df[['tau_roll', 'tau_pitch']] = butter_lowpass_filter(df[['tau_roll', 'tau_pitch']].values, CUTOFF, FS)
 
 # Chuẩn hóa để AI hội tụ nhanh
 scaler_X = StandardScaler()
@@ -70,7 +70,7 @@ def create_sliding_windows(X_data, Y_data, window_size):
     """
     X, Y = [], []
     for i in range(len(X_data) - window_size):
-        window_x = X_data[i : i + window_size, :]  # Quá khứ: Lấy 2 cột Tau
+        window_x = X_data[i : i + window_size, :]  # Quá khứ: Lấy 4 cột (tau_roll, tau_pitch, roll, pitch) trong cửa sổ
         X.append(window_x) 
 
         target_y = Y_data[i + window_size, :]      # Tương lai: Lấy 2 cột Góc roll , pitch
@@ -78,7 +78,8 @@ def create_sliding_windows(X_data, Y_data, window_size):
 
     return np.array(X), np.array(Y)
 
-WINDOW_SIZE = 50 # 0.5 giây ở tần số 100Hz
+# Rút ngắn Cửa sổ trượt (Tăng phản xạ)
+WINDOW_SIZE = 20 # 0.2 giây ở tần số 100Hz
 X_full, Y_full = create_sliding_windows(normalized_X, normalized_Y, WINDOW_SIZE)
 
 # ==========================================
@@ -97,6 +98,6 @@ X_test, Y_test   = X_full[val_end:], Y_full[val_end:]
 # IN KIỂM TRA KẾT QUẢ
 # ==========================================
 print("--- CẤU TRÚC DỮ LIỆU ĐÃ SẴN SÀNG CHO PYTORCH ---")
-print(f"Kích thước X_train: {X_train.shape} -> (Batch, {WINDOW_SIZE} timesteps, 2 features: tau_roll, tau_pitch)")
+print(f"Kích thước X_train: {X_train.shape} -> (Batch, {WINDOW_SIZE} timesteps, 4 features: tau_roll, tau_pitch, roll, pitch)")
 print(f"Kích thước Y_train: {Y_train.shape} -> (Batch, 2 features: roll, pitch)")
 print(f"Phân bổ dữ liệu: Train = {len(X_train)} mẫu | Val = {len(X_val)} mẫu | Test = {len(X_test)} mẫu")
