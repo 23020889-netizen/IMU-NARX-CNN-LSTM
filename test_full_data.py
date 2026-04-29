@@ -88,7 +88,7 @@ Y_test = np.array(Y_test_full)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = UAV_Torque_Net(seq_length=20).to(device)
 
-# Load cục tạ siêu xịn của bạn
+# Load trọng số đã train tốt nhất (Đảm bảo đường dẫn đúng)
 model.load_state_dict(torch.load('/kaggle/working/uav_torque_best.pth'))
 model.eval()
 
@@ -111,7 +111,6 @@ with torch.no_grad():
             next_window = X_test_tensor[i+1].unsqueeze(0).clone().to(device)
             
             # --- CẬP NHẬT GÓC (CỰC KỲ ĐƠN GIẢN CHO BẢN 4 BIẾN) ---
-            # Vì ta không cần tính đạo hàm, nên có thể nhét thẳng giá trị Scaled dự đoán 
             # vào vị trí [cột 2 là Roll, cột 3 là Pitch] của timestep cuối cùng
             next_window[0, -1, 2] = pred_Y[0, 0] 
             next_window[0, -1, 3] = pred_Y[0, 1] 
