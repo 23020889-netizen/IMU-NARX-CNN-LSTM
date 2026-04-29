@@ -41,7 +41,7 @@ for epoch in range(epochs):
     # ÉP MÔ HÌNH KHÔNG Ỷ LẠI: Cứ 10 epoch giảm tỷ lệ mớm đi 10%
     if epoch > 0 and epoch % 10 == 0:
         teacher_forcing_ratio = max(0.5, teacher_forcing_ratio - 0.1)
-        print(f"📉 Teacher Forcing Ratio giảm còn: {teacher_forcing_ratio:.1f}")
+        print(f" Teacher Forcing Ratio giảm còn: {teacher_forcing_ratio:.1f}")
 
     for inputs, targets in train_loader:
         inputs, targets = inputs.to(device), targets.to(device)
@@ -78,7 +78,7 @@ for epoch in range(epochs):
     
     print(f'Epoch [{epoch+1}/{epochs}] | Train MSE: {avg_train_loss:.6f} | Val MSE: {avg_val_loss:.6f}')
     if optimizer.param_groups[0]['lr'] < current_lr:
-        print(f"   ⚠️ Giảm Learning Rate xuống {optimizer.param_groups[0]['lr']}")
+        print(f"  Giảm Learning Rate xuống {optimizer.param_groups[0]['lr']}")
     
     # EARLY STOPPING
     if avg_val_loss < best_val_loss:
@@ -88,5 +88,5 @@ for epoch in range(epochs):
     else:
         trigger_times += 1
         if trigger_times >= patience_early_stop:
-            print(f"🛑 Dừng sớm tại Epoch {epoch+1}. Best Val MSE: {best_val_loss:.6f}")
+            print(f"Dừng sớm tại Epoch {epoch+1}. Best Val MSE: {best_val_loss:.6f}")
             break
