@@ -25,8 +25,8 @@ columns_list = [
     'm1', 'm2', 'm3', 'm4'
 ]
 
-# 1. Dán đường dẫn bạn vừa copy ở Kaggle vào đây
-csv_file_path = 'AI_Training_Data.csv' 
+
+csv_file_path = 'AI_Training_Data_2.csv' 
 
 # 2. Đọc file thật
 df = pd.read_csv(csv_file_path)
@@ -51,7 +51,7 @@ cols_Y = ['roll', 'pitch']
 
 # Lọc nhiễu Butterworth cho tín hiệu Momen (Vì lệnh động cơ m1..m4 đôi khi bị giật cục)
 FS = 100.0 
-CUTOFF = 15.0 
+CUTOFF = 35
 df[['tau_roll', 'tau_pitch']] = butter_lowpass_filter(df[['tau_roll', 'tau_pitch']].values, CUTOFF, FS)
 
 # Chuẩn hóa để AI hội tụ nhanh
